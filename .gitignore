@@ -25,3 +25,6 @@
 # OS X nausieance
 .DS_Store
 
+# Generated headers
+include/version.h
+

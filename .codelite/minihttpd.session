@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Session Name="/home/technix/Developer/minihttpd/minihttpd.workspace">
+  <int Value="1" Name="m_selectedTab"/>
+  <wxString Value="/home/technix/Developer/minihttpd/minihttpd.workspace" Name="m_workspaceName"/>
+  <TabInfoArray Name="TabInfoArray">
+    <TabInfo>
+      <wxString Value="/home/technix/Developer/minihttpd/src/main.c" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="0" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="/home/technix/Developer/minihttpd/include/main.h" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="0" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+  </TabInfoArray>
+  <SerializedObject Name="m_breakpoints">
+    <long Value="0" Name="Count"/>
+  </SerializedObject>
+</Session>

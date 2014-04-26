@@ -10,7 +10,7 @@
 
 TARGET := minihttpd
 
-CFLAGS += -std=gnu11 -fPIC
+CFLAGS += -std=gnu11 -fPIC -Wall
 CPPFLAGS += -Iinclude
 LDFLAGS += -lpthread -lm
 
@@ -20,10 +20,10 @@ HEADERS := $(wildcard include/*.h) include/version.h
 CC := $(shell ./compiler.sh)
 CCLD := $(CC)
 
-OBJS := ${C_FILES:.c=.c.o}
+OBJS := $(patsubst %.c,%.c.o,$(C_FILES))
 
 all: $(TARGET)
-.PHONY: all clean check
+.PHONY:all clean check
 
 $(TARGET): $(OBJS)
 	$(CCLD) $(LDFLAGS) $(OBJS) -o $@
@@ -31,7 +31,9 @@ $(TARGET): $(OBJS)
 %.c.o: %.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-clean:
-	-rm -rf $(OBJS) $(TARGET)
+include/version.h: version.sh
+	./version.sh > $@
 
-check:
+clean:
+	-rm -rf $(OBJS) $(TARGET) include/version.h
+
