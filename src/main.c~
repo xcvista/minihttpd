@@ -97,7 +97,7 @@ void version(void)
 void usage(void)
 {
     fprintf(stderr,
-        "USAGE: minihttpd [-p <port>] [-r <root>] [-hv]\n"
+        "USAGE: minihttpd [-p <port>] -r <root>\n"
         "\n"
         "-p, --port:     listening port. Default to 80 (root) or 8080 (non-root)\n"
         "-r, --root:     web root directory. Default to $HOME\n"
