@@ -25,6 +25,11 @@
 # OS X nausieance
 .DS_Store
 
+# Backup files
+*~
+~*
+*.swp
+
 # Generated headers
 include/version.h
 
