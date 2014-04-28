@@ -37,6 +37,8 @@ __BEGIN_DECLS
  */
 extern bool keep_alive;
 
+extern char *root;
+
 /**
  * Main extry point, declared here.
  */
@@ -51,6 +53,11 @@ extern void fail(const char *file, int line, const char *function,
     __attribute__((format(printf, 4, 5), noreturn));
 #define FAIL(fmt, ...) fail(__FILE__, __LINE__, __PRETTY_FUNCTION__, \
         fmt, ##__VA_ARGS__)
+
+/**
+ * Try to allocate some memory, and crash if failed
+ */
+extern void *trymalloc(size_t size);
 
 __END_DECLS
 

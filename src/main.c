@@ -6,10 +6,12 @@
  */
 
 #include "main.h"
+#include "connection.h"
 
 #include <getopt.h>
 
 bool keep_alive;
+char *root;
 
 // Help message functions.
 
@@ -27,14 +29,16 @@ static struct option options_long[] = {
     { NULL,         0,                  NULL,   0   }
 };
 
+void sigint(int arg)
+{
+    keep_alive = false;
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, const char **argv, const char **envp)
 {
-    char *root = malloc(1024);
     int port = 0;
-    int opt;
-
-    if (!root)
-        FAIL(NULL);
+    int opt = 0;
 
     // Parse the command line.
     while ((opt = getopt_long(argc, (char *const *)argv, 
@@ -56,6 +60,7 @@ int main(int argc, const char **argv, const char **envp)
                 exit(EXIT_SUCCESS);
                 break;
             case 'r':
+                root = trymalloc(strlen(optarg) + 1);
                 strncpy(root, optarg, 1024);
                 break;
             case 'p':
@@ -70,8 +75,59 @@ int main(int argc, const char **argv, const char **envp)
         }
     }
 
+    // Validate the arguments
+
+    if (port <= 0)
+        port = getuid() ? 8080 : 80;
+
+    if (!root || !strlen(root))
+    {
+        if (root)
+            free(root);
+        root = trymalloc(strlen(getenv("HOME")) + 1);
+        strcpy(root, getenv("HOME"));
+    }
+
     if (getuid() && port < 1024)
         FAIL("Cannot open port %d with user %s.\n", port, getenv("USER"));
+
+    fprintf(stderr, "minihttpd: opening port %d serving path %s\n", port, root);
+
+    // Catch signals
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGINT, sigint);
+    signal(SIGTERM, sigint);
+
+    // Open the socket
+    int listen_socket = socket(AF_INET6, SOCK_STREAM, 0);
+    if (listen_socket < 0)
+        FAIL(NULL);
+
+    // Find the destinetion address
+    struct sockaddr_in6 server_addr;
+    memset(&server_addr, 0, sizeof(struct sockaddr_in6));
+    server_addr.sin6_family = AF_INET6;
+    server_addr.sin6_addr = in6addr_any;
+    server_addr.sin6_port = htons((uint16_t)port);
+
+    // Bind the socket to IPv6 [::]:port
+    if (bind(listen_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in6)) < 0)
+        FAIL(NULL);
+
+    // Start the socket listening
+    if (listen(listen_socket, 5) < 0)
+        FAIL(NULL);
+
+    // Accept connections
+    keep_alive = true;
+    while (keep_alive)
+    {
+        user_connection_t *conn = user_connection_accept(listen_socket);
+        user_connection_terminate(conn);
+    }
+
+    // Clean up
+    close(listen_socket);
 }
 
 void copyright(void)
@@ -105,6 +161,15 @@ void usage(void)
         "-v, --version:  print server version and exit\n"
         "\n"
         );
+}
+
+void *trymalloc(size_t size)
+{
+    void *buf = malloc(size);
+    if (!buf)
+        FAIL(NULL);
+    memset(buf, 0, size);
+    return buf;
 }
 
 void fail(const char *file, int line, const char *function, const char *fmt, ...)
