@@ -33,3 +33,5 @@
 # Generated headers
 include/version.h
 
+# Product
+minihttpd
