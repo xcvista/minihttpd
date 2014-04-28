@@ -12,6 +12,7 @@
 
 bool keep_alive;
 char *root;
+int listen_socket;
 
 // Help message functions.
 
@@ -32,6 +33,12 @@ static struct option options_long[] = {
 void sigint(int arg)
 {
     keep_alive = false;
+    close(listen_socket);
+    const char *signame = strsignal(arg);
+    if (signame)
+        fprintf(stderr, "\rminihttpd: exiting with signal %s.\n", signame);
+    else
+        fprintf(stderr, "\rminihttpd: exiting with signal %d.\n", arg);
     exit(EXIT_SUCCESS);
 }
 
@@ -99,8 +106,7 @@ int main(int argc, const char **argv, const char **envp)
     signal(SIGTERM, sigint);
 
     // Open the socket
-    int listen_socket = socket(AF_INET6, SOCK_STREAM, 0);
-    if (listen_socket < 0)
+    if ((listen_socket = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
         FAIL(NULL);
 
     // Find the destinetion address
@@ -109,6 +115,11 @@ int main(int argc, const char **argv, const char **envp)
     server_addr.sin6_family = AF_INET6;
     server_addr.sin6_addr = in6addr_any;
     server_addr.sin6_port = htons((uint16_t)port);
+
+    // Allow fast rebinding
+    int t = 1;
+    if (setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &t, sizeof(t)) < 0)
+        FAIL(NULL);
 
     // Bind the socket to IPv6 [::]:port
     if (bind(listen_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in6)) < 0)
@@ -123,7 +134,7 @@ int main(int argc, const char **argv, const char **envp)
     while (keep_alive)
     {
         user_connection_t *conn = user_connection_accept(listen_socket);
-        user_connection_terminate(conn);
+        user_connection_detach(conn);
     }
 
     // Clean up

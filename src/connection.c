@@ -1,6 +1,18 @@
 
 #include "connection.h"
 
+struct user_connection
+{
+    // Socket information
+    int fd;
+    struct sockaddr_in6 *address;
+    socklen_t length;
+
+    // Thread information
+    pthread_attr_t thread_attr;
+    pthread_t thread;
+};
+
 user_connection_t *user_connection_accept(int socket)
 {
     user_connection_t *conn = trymalloc(sizeof(user_connection_t));
@@ -27,9 +39,32 @@ user_connection_t *user_connection_accept(int socket)
     return conn;
 }
 
+void user_connection_terminate(user_connection_t *conn);
+
+void *user_connection_main(user_connection_t *conn)
+{
+    user_connection_terminate(conn);
+    return NULL;
+}
+
+void user_connection_detach(user_connection_t *conn)
+{
+    if ((errno = pthread_attr_init(&conn->thread_attr)))
+        FAIL(NULL);
+
+    if ((errno = pthread_attr_setdetachstate(&conn->thread_attr, PTHREAD_CREATE_DETACHED)))
+        FAIL(NULL);
+
+    if ((errno = pthread_create(&conn->thread, &conn->thread_attr, (void *(*)(void *))user_connection_main, conn)))
+        FAIL(NULL);
+}
+
 void user_connection_terminate(user_connection_t *conn)
 {
     close(conn->fd);
+    pthread_attr_destroy(&conn->thread_attr);
     free(conn->address);
     free(conn);
+
+    pthread_exit(NULL);
 }
