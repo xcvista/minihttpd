@@ -57,15 +57,16 @@ void *user_connection_main(user_connection_t *conn)
     FILE *infile = fdopen(readfd, "r+b");
     
     char *line = trymalloc(BUFSIZ);
-    int state = 0; // 0 = reading URI header, 1 = reading header fields, 2 = done reading.
+    //int state = 0; // 0 = reading URI header, 1 = reading header fields, 2 = done reading.
     
-    char method[10];
-    char *uri = trymalloc(BUFSIZ);
-    char protver[20];
+    //char method[10];
+    //char *uri = trymalloc(BUFSIZ);
+    //char protver[20];
 
     //char *key = trymalloc(BUFSIZ);
     //char *value = trymalloc(BUFSIZ);
 
+    /*
     while (fgets(line, BUFSIZ, infile) > 0 && state < 2)
     {
         fprintf(stderr, "%s", line);
@@ -88,6 +89,17 @@ void *user_connection_main(user_connection_t *conn)
                 FAIL("What is this state?!");
         }
     }
+    */
+    if (fgets(line, BUFSIZ, infile) <= 0)
+    {
+        free(line);
+        fclose(infile);
+        user_connection_terminate(conn);
+        return NULL;
+    }
+
+    char *uri = strchr(line, ' ') + 1;
+    *(strchr(uri, ' ')) = 0;
 
     // Handle the path, commericial software style.
     //int level = 0;
@@ -152,7 +164,54 @@ void *user_connection_main(user_connection_t *conn)
 
     strcat(path, uri);
 
-    fprintf(stderr, "method: %s uri: %s path: %s\n", method, uri, path);
+    //fprintf(stderr, "uri: %s path: %s\n", uri, path);
+    
+    fflush(infile);
+
+    // Read the file and find out its information.
+    int targetfd = open(path, O_RDONLY);
+    if (targetfd < 0)
+    {
+        if (errno == ENOENT)
+        {
+            // HTTP 404
+            fprintf(infile,
+                    "HTTP/1.0 404 Not Found\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "\r\n"
+                    "minihttpd: %s: %s\n",
+                    uri, strerror(errno)
+                    );
+            fclose(infile);
+        }
+        else
+        {
+            // HTTP 403
+            fprintf(infile,
+                    "HTTP/1.0 403 Forbidden\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "\r\n"
+                    "minihttpd: %s: %s\n",
+                    uri, strerror(errno)
+                    );
+            fclose(infile);
+        }
+    }
+    else
+    {
+        struct stat st;
+        fstat(targetfd, &st);
+        size_t length = st.st_size;
+        fprintf(stderr, "Requesting file %s with length %ld\n", path, length);
+        void *buf = trymalloc(length);
+        read(targetfd, buf, length);
+        fwrite(buf, length, 1, infile);
+        free(buf);
+        close(targetfd);
+        fclose(infile);
+    }
+
+    free(line);
 
     user_connection_terminate(conn);
     return NULL;

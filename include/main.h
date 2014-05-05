@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/cdefs.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
