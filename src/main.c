@@ -134,7 +134,8 @@ int main(int argc, const char **argv, const char **envp)
     while (keep_alive)
     {
         user_connection_t *conn = user_connection_accept(listen_socket);
-        user_connection_detach(conn);
+        if (conn)
+            user_connection_detach(conn);
     }
 
     // Clean up

@@ -15,15 +15,22 @@ struct user_connection
 
 user_connection_t *user_connection_accept(int socket)
 {
+    // Allocate memory for the new connection object
     user_connection_t *conn = trymalloc(sizeof(user_connection_t));
     memset(conn, 0, sizeof(user_connection_t));
     
     // Prepare for accept(2)
     socklen_t length = sizeof(struct sockaddr_in6);
     struct sockaddr_in6 *addr = trymalloc(length);
+
+    // accept(2)
     int fd = accept(socket, (struct sockaddr *)addr, &length);
     if (fd < 0)
-        FAIL(NULL);
+    {
+        free(addr);
+        free(conn);
+        return NULL;
+    }
 
     char *name = malloc(INET6_ADDRSTRLEN);
     if (name)
