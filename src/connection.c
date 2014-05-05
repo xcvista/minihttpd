@@ -57,12 +57,102 @@ void *user_connection_main(user_connection_t *conn)
     FILE *infile = fdopen(readfd, "r+b");
     
     char *line = trymalloc(BUFSIZ);
-    int state = 0; // 0 = reading URI header, 1 = reading header fields.
+    int state = 0; // 0 = reading URI header, 1 = reading header fields, 2 = done reading.
+    
+    char method[10];
+    char *uri = trymalloc(BUFSIZ);
+    char protver[20];
 
-    while (fgets(line, BUFSIZ, infile) > 0)
+    //char *key = trymalloc(BUFSIZ);
+    //char *value = trymalloc(BUFSIZ);
+
+    while (fgets(line, BUFSIZ, infile) > 0 && state < 2)
     {
-        
+        fprintf(stderr, "%s", line);
+        switch (state)
+        {
+            case 0:
+                sscanf("%s %s %s", method, uri, protver);
+                state = 1;
+                break;
+            case 1:
+                if (!strcmp(line, "\n") || !strcmp(line, "\r\n"))
+                {
+                    state = 2;
+                    break;
+                }
+                //char *cp = strchr(line, ':');
+                // ...
+                break;
+            default:
+                FAIL("What is this state?!");
+        }
     }
+
+    // Handle the path, commericial software style.
+    //int level = 0;
+    char *path = trymalloc(BUFSIZ);
+    strcpy(path, root);
+
+    /*
+    char *cp = path + strlen(path);
+    if (*(cp - 1) == '/')
+    {
+        cp--;
+        *cp = 0;
+    }
+
+    char *up = uri;
+    do
+    {
+        char *up2 = strchr(up + 1, '/');
+        if (!up2)
+        {
+            strcpy(cp, up);
+        }
+        else if (up2 - up > 1)
+        {
+            char *l = up + 1;
+            int len = up2 - up - 1;
+            if (len == 1 && *l == '.')
+            {
+                up = up2;
+                continue;
+            }
+            else if (len == 2 && !strncmp(l, "..", 2))
+            {
+                if (!level)
+                {
+                    up = up2;
+                    continue;
+                }
+                else
+                {
+                    level--;
+                    cp = strrchr(path, '/');
+                    *cp = 0;
+                }
+            }
+            else
+            {
+                *cp = '/';
+                memcpy(++cp, l, len);
+                cp += len;
+                *cp = 0;
+                level++;
+            }
+        }
+        else
+        {
+            up++;
+            continue;
+        }
+    } while (*up);
+    */
+
+    strcat(path, uri);
+
+    fprintf(stderr, "method: %s uri: %s path: %s\n", method, uri, path);
 
     user_connection_terminate(conn);
     return NULL;
