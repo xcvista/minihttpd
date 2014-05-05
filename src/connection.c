@@ -50,6 +50,20 @@ void user_connection_terminate(user_connection_t *conn);
 
 void *user_connection_main(user_connection_t *conn)
 {
+    int readfd = dup(conn->fd);
+    if (readfd < 0)
+        FAIL(NULL);
+
+    FILE *infile = fdopen(readfd, "r+b");
+    
+    char *line = trymalloc(BUFSIZ);
+    int state = 0; // 0 = reading URI header, 1 = reading header fields.
+
+    while (fgets(line, BUFSIZ, infile) > 0)
+    {
+        
+    }
+
     user_connection_terminate(conn);
     return NULL;
 }
